@@ -2,10 +2,10 @@
   <div class="min-h-screen bg-black text-white pb-16">
     
     <!-- 1. HERO BANNER -->
-    <div v-if="featuredMovie && !selectedGenre && !route.query.q" class="relative h-[85vh] w-full overflow-hidden">
+    <div v-if="movies.length > 0 && !selectedGenre && !route.query.q" class="relative h-[85vh] w-full overflow-hidden">
       <div class="absolute inset-0">
         <img 
-          :src="getImageUrl(featuredMovie.backdrop_path, 'backdrop', 'original')" 
+          :src="getImageUrl(currentFeaturedMovie.backdrop_path, 'backdrop', 'original')" 
           class="w-full h-full object-cover"
           alt="Hero Background"
         />
@@ -13,23 +13,23 @@
         <div class="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent"></div>
       </div>
 
-      <div class="absolute bottom-0 left-0 w-full p-8 md:p-16 pb-24 z-10 flex flex-col items-start gap-6 max-w-4xl">
+      <div class="relative z-10 flex flex-col justify-center h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <h1 class="text-5xl md:text-7xl font-black leading-tight drop-shadow-2xl">
-          {{ featuredMovie.title }}
+          {{ currentFeaturedMovie.title }}
         </h1>
         <p class="text-lg md:text-xl text-zinc-200 line-clamp-3 md:line-clamp-2 max-w-2xl drop-shadow-md">
-          {{ featuredMovie.overview }}
+          {{ currentFeaturedMovie.overview }}
         </p>
         
         <div class="flex flex-wrap gap-4 mt-4">
           <button 
-            @click="playMovie(featuredMovie)"
+            @click="playMovie(currentFeaturedMovie)"
             class="px-8 py-4 bg-red-600 text-white text-lg font-bold rounded-xl hover:bg-red-700 transition-all shadow-[0_0_30px_rgba(220,38,38,0.4)] flex items-center gap-3"
           >
             <Play class="w-6 h-6 fill-current" /> Watch Movie
           </button>
           <button 
-            @click="openModal(featuredMovie)"
+            @click="openModal(currentFeaturedMovie)"
             class="px-8 py-4 bg-white/10 backdrop-blur-md text-white text-lg font-bold rounded-xl hover:bg-white/20 transition-all border border-white/20 flex items-center gap-3"
           >
             <Info class="w-6 h-6" /> More Info
@@ -56,12 +56,10 @@
               v-for="filter in filters"
               :key="filter.id"
               @click="setMainFilter(filter.id)"
-              :class="[
-                'px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 uppercase tracking-wide',
-                activeFilter === filter.id
-                  ? 'bg-red-600 text-white shadow-lg scale-105'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'
-              ]"
+              :class="[`
+                px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 uppercase tracking-wide
+                ${activeFilter === filter.id ? 'bg-red-600 text-white shadow-lg scale-105' : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'}
+              `]"
             >
               {{ filter.name }}
             </button>
@@ -83,12 +81,10 @@
               v-for="genre in genreList"
               :key="genre.id"
               @click="setGenreFilter(genre.id)"
-              :class="[
-                'whitespace-nowrap px-5 py-2 rounded-xl text-sm font-bold border transition-all duration-300',
-                selectedGenre === genre.id
-                  ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] transform scale-105'
-                  : 'bg-black/40 border-zinc-800 text-zinc-400 hover:border-zinc-500 hover:text-white backdrop-blur-sm'
-              ]"
+              :class="[`
+                whitespace-nowrap px-5 py-2 rounded-xl text-sm font-bold border transition-all duration-300
+                ${selectedGenre === genre.id ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] transform scale-105' : 'bg-black/40 border-zinc-800 text-zinc-400 hover:border-zinc-500 hover:text-white backdrop-blur-sm'}
+              `]"
             >
               {{ genre.name }}
             </button>
@@ -192,10 +188,6 @@
         </button>
       </div>
       
-      <!-- 
-           This iframe plays the movie directly on your site using the Database ID.
-           It connects the TMDB ID (e.g. 550) to the streaming server.
-      -->
       <div class="flex-1 relative bg-black">
         <iframe 
           v-if="videoUrl" 
@@ -237,10 +229,13 @@ const loading = ref(true)
 const loadingMore = ref(false)
 const selectedMovie = ref(null)
 
+// Featured movie rotation
+const featuredIndex = ref(0)
+const currentFeaturedMovie = ref(null)
+
 // Filter States
 const activeFilter = ref('popular')
 const selectedGenre = ref(null)
-
 const currentPage = ref(1)
 
 // Video Player refs
@@ -258,46 +253,37 @@ const filters = [
 // --- FETCH LOGIC ---
 const fetchMovies = async (append = false) => {
   try {
-    if (append) {
-      loadingMore.value = true
-    } else {
+    if (append) loadingMore.value = true
+    else {
       loading.value = true
       currentPage.value = 1
       movies.value = []
     }
 
     let data
-
     if (route.query.q) {
       data = await searchMovies(route.query.q, currentPage.value)
       activeFilter.value = null
       selectedGenre.value = null
-    } 
-    else if (selectedGenre.value) {
+    } else if (selectedGenre.value) {
       data = await getMoviesByGenre(selectedGenre.value, currentPage.value)
       activeFilter.value = null
-    } 
-    else {
+    } else {
       if (!activeFilter.value) activeFilter.value = 'popular'
       const filter = filters.find(f => f.id === activeFilter.value) || filters[0]
       data = await filter.fetchFn(currentPage.value)
     }
 
-    if (append) {
-      movies.value = [...movies.value, ...data.results]
-    } else {
+    if (append) movies.value = [...movies.value, ...data.results]
+    else {
       movies.value = data.results
-      
-      if (!route.query.q && !selectedGenre.value && activeFilter.value === 'popular' && !featuredMovie.value && movies.value.length > 0) {
-        featuredMovie.value = movies.value[0]
+      if (!route.query.q && !selectedGenre.value && activeFilter.value === 'popular' && movies.value.length > 0) {
+        currentFeaturedMovie.value = movies.value[0]
+        featuredIndex.value = 0
       }
     }
-  } catch (error) {
-    console.error('Error fetching movies:', error)
-  } finally {
-    loading.value = false
-    loadingMore.value = false
-  }
+  } catch (error) { console.error('Error fetching movies:', error) }
+  finally { loading.value = false; loadingMore.value = false }
 }
 
 // --- FILTER HANDLERS ---
@@ -330,17 +316,12 @@ const getGenreName = (id) => {
 watch(() => route.query.q, () => fetchMovies())
 
 // --- ACTIONS ---
-const loadMore = () => {
-  currentPage.value++
-  fetchMovies(true)
-}
-
+const loadMore = () => { currentPage.value++; fetchMovies(true) }
 const openModal = (movie) => { selectedMovie.value = movie }
 const closeModal = () => { selectedMovie.value = null }
 
 const playMovie = (movie) => {
   currentVideoTitle.value = movie.title
-  // This uses the TMDB ID to find the movie stream and plays it here
   videoUrl.value = `https://vidsrc.xyz/embed/movie/${movie.id}`
   isVideoOpen.value = true
   closeModal()
@@ -355,26 +336,18 @@ const playTrailer = async (movie) => {
       videoUrl.value = `https://www.youtube.com/embed/${trailer.key}?autoplay=1`
       isVideoOpen.value = true
       closeModal()
-    } else {
-      alert("No trailer available")
-    }
+    } else alert("No trailer available")
   } catch(e) { console.error(e) }
 }
 
-const closeVideo = () => {
-  isVideoOpen.value = false
-  videoUrl.value = ''
-}
-
+const closeVideo = () => { isVideoOpen.value = false; videoUrl.value = '' }
 const addToFavorites = (movie) => {
   const favorites = JSON.parse(localStorage.getItem('movieFavorites') || '[]')
   if (!favorites.find(fav => fav.id === movie.id)) {
     favorites.push(movie)
     localStorage.setItem('movieFavorites', JSON.stringify(favorites))
     alert('Added to My List!')
-  } else {
-    alert('Already in My List!')
-  }
+  } else alert('Already in My List!')
 }
 
 // --- ON MOUNT ---
@@ -385,6 +358,14 @@ onMounted(async () => {
   } catch (e) { console.error('Error loading genres', e) }
 
   fetchMovies()
+
+  // Auto-rotate hero movie every 15 seconds
+  setInterval(() => {
+    if (movies.value.length > 0 && !selectedGenre.value && !route.query.q) {
+      featuredIndex.value = (featuredIndex.value + 1) % movies.value.length
+      currentFeaturedMovie.value = movies.value[featuredIndex.value]
+    }
+  }, 8000)
 })
 </script>
 
@@ -409,4 +390,12 @@ onMounted(async () => {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #ef4444; 
 }
+
+
+/* Hero fade transition */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.8s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+
+
 </style>
