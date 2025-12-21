@@ -2,7 +2,6 @@
   <div class="min-h-screen bg-black text-white pt-24 pb-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      <!-- 1. HEADER (Gold Accent for Premium Feel) -->
       <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <h1 class="text-5xl font-black text-white tracking-tight flex items-center gap-3">
@@ -22,7 +21,6 @@
         </button>
       </div>
 
-      <!-- 2. EMPTY STATE -->
       <div v-if="favorites.length === 0" class="flex flex-col items-center justify-center py-32 text-center animate-fade-in">
         <div class="relative mb-8 group">
           <div class="absolute inset-0 bg-red-600 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity rounded-full"></div>
@@ -40,24 +38,20 @@
         </router-link>
       </div>
 
-      <!-- 3. FAVORITES GRID -->
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
         <div
           v-for="item in favorites"
           :key="item.id"
-          class="group relative aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-yellow-500/10 transition-all duration-500 hover:-translate-y-2"
+          class="group relative aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-yellow-500/10 transition-all duration-500 lg:hover:-translate-y-2"
         >
-          <!-- Poster -->
           <img
             :src="getImageUrl(item.poster_path, 'poster', 'medium')"
             :alt="item.title || item.name"
-            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            class="w-full h-full object-cover transition-transform duration-700 lg:group-hover:scale-110"
           />
 
-          <!-- HOVER OVERLAY -->
-          <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col p-4">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300 flex flex-col p-3 md:p-4">
             
-            <!-- Remove Button (Top Right) -->
             <button
               @click.stop="removeFromFavorites(item.id)"
               class="self-end p-2 bg-black/60 backdrop-blur-md rounded-full text-zinc-400 hover:bg-red-600 hover:text-white transition-all hover:scale-110 border border-white/10"
@@ -66,28 +60,26 @@
               <Trash2 class="w-4 h-4" />
             </button>
 
-            <!-- Bottom Content -->
             <div class="mt-auto">
-              <h3 class="font-bold text-white text-sm mb-1 line-clamp-2 leading-tight">{{ item.title || item.name }}</h3>
+              <h3 class="font-bold text-white text-xs md:text-sm mb-1 line-clamp-2 leading-tight">{{ item.title || item.name }}</h3>
               
-              <div class="flex items-center gap-2 text-xs text-zinc-300 mb-3">
+              <div class="flex items-center gap-2 text-[10px] md:text-xs text-zinc-300 mb-2 md:mb-3">
                 <span class="flex items-center gap-1 text-yellow-500">
                   <Star class="w-3 h-3 fill-current" /> {{ item.vote_average?.toFixed(1) }}
                 </span>
                 <span>{{ item.release_date?.split('-')[0] }}</span>
               </div>
 
-              <!-- Action Buttons -->
               <div class="grid grid-cols-2 gap-2">
                 <button 
                   @click.stop="playMovie(item)"
-                  class="bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1 transition-colors shadow-lg"
+                  class="bg-red-600 hover:bg-red-700 text-white py-1.5 md:py-2 rounded-lg font-bold text-[10px] md:text-xs flex items-center justify-center gap-1 transition-colors shadow-lg"
                 >
                   <Play class="w-3 h-3 fill-current" /> Watch
                 </button>
                 <button 
                   @click.stop="openDetailModal(item)"
-                  class="bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1 transition-colors shadow-lg"
+                  class="bg-zinc-700 hover:bg-zinc-600 text-white py-1.5 md:py-2 rounded-lg font-bold text-[10px] md:text-xs flex items-center justify-center gap-1 transition-colors shadow-lg"
                 >
                   <Info class="w-3 h-3" /> Info
                 </button>
@@ -98,7 +90,6 @@
       </div>
     </div>
 
-    <!-- 4. MOVIE DETAILS MODAL -->
     <div v-if="selectedMovie" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/90 backdrop-blur-md" @click="closeModal"></div>
       
@@ -130,7 +121,6 @@
              <button @click="playMovie(selectedMovie)" class="col-span-1 sm:col-span-2 py-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg flex justify-center items-center gap-2">
                <Play class="w-5 h-5 fill-current" /> WATCH MOVIE
              </button>
-             <!-- We use removeFromFavorites here since it's the favorites page -->
              <button @click="removeFromFavorites(selectedMovie.id); closeModal()" class="py-3 bg-zinc-800 text-red-500 font-bold rounded-xl hover:bg-zinc-700 transition-all flex justify-center items-center gap-2">
                <Trash2 class="w-5 h-5" /> Remove from List
              </button>
@@ -139,7 +129,6 @@
       </div>
     </div>
 
-    <!-- 5. VIDEO PLAYER OVERLAY -->
     <div v-if="isVideoOpen" class="fixed inset-0 z-[60] bg-black flex flex-col">
       <div class="flex justify-between items-center p-4 bg-zinc-900 border-b border-zinc-800 text-white">
         <span class="font-bold text-lg flex items-center gap-2">
@@ -169,28 +158,22 @@ import { ref, onMounted } from 'vue'
 import { Heart, X, Play, Info, Star, Trash2 } from 'lucide-vue-next'
 import { getImageUrl } from '../services/tmdb.js'
 
-// State
 const favorites = ref([])
 const selectedMovie = ref(null)
-
-// Video Player State
 const isVideoOpen = ref(false)
 const videoUrl = ref('')
 const currentVideoTitle = ref('')
 
-// Load Favorites
 const loadFavorites = () => {
   const saved = localStorage.getItem('movieFavorites')
   favorites.value = saved ? JSON.parse(saved) : []
 }
 
-// Remove Item
 const removeFromFavorites = (id) => {
   favorites.value = favorites.value.filter(item => item.id !== id)
   localStorage.setItem('movieFavorites', JSON.stringify(favorites.value))
 }
 
-// Clear All
 const clearAll = () => {
   if (confirm('Are you sure you want to delete your entire list?')) {
     favorites.value = []
@@ -198,7 +181,6 @@ const clearAll = () => {
   }
 }
 
-// Modal Logic
 const openDetailModal = (movie) => {
   selectedMovie.value = movie
 }
@@ -207,12 +189,10 @@ const closeModal = () => {
   selectedMovie.value = null
 }
 
-// Video Player Logic
 const playMovie = (movie) => {
-  currentVideoTitle.value = movie.title
+  currentVideoTitle.value = movie.title || movie.name
   videoUrl.value = `https://vidsrc.xyz/embed/movie/${movie.id}`
   isVideoOpen.value = true
-  // If playing from detail modal, close it
   closeModal()
 }
 
